@@ -1,0 +1,39 @@
+#!/bin/bash
+#:  * `lizard-update` [`--check`]
+#:
+#:  Refresh only the Lizard tap (not all of Homebrew), then upgrade Lizard and restart it
+#:  if it was running. `--check` just shows the installed and latest versions.
+set -euo pipefail
+
+TAP_DIR="$(brew --repository get-lizard/tap)"
+echo "==> Refreshing the get-lizard/tap tap"
+git -C "$TAP_DIR" pull --ff-only --quiet
+
+latest="$(sed -n 's/^ *version "\(.*\)"/\1/p' "$TAP_DIR/Casks/lizard.rb" | head -1)"
+app="/Applications/Lizard.app"
+installed="$(defaults read "$app/Contents/Info.plist" CFBundleShortVersionString 2>/dev/null || echo "not installed")"
+echo "Installed: $installed   Latest: $latest"
+[[ "${1:-}" == "--check" ]] && exit 0
+
+if [[ "$installed" == "$latest" ]]; then
+  echo "Lizard is up to date."
+  exit 0
+fi
+
+running=false
+if pgrep -x Lizard >/dev/null; then
+  running=true
+  osascript -e 'quit app "Lizard"' >/dev/null 2>&1 || true
+  for _ in {1..20}; do pgrep -x Lizard >/dev/null || break; sleep 0.25; done
+fi
+
+# The tap is fresh already; don't update the rest of Homebrew.
+if brew list --cask lizard >/dev/null 2>&1; then
+  HOMEBREW_NO_AUTO_UPDATE=1 brew upgrade --cask get-lizard/tap/lizard || HOMEBREW_NO_AUTO_UPDATE=1 brew reinstall --cask get-lizard/tap/lizard
+else
+  HOMEBREW_NO_AUTO_UPDATE=1 brew install --cask get-lizard/tap/lizard
+fi
+
+echo "==> Lizard $(defaults read "$app/Contents/Info.plist" CFBundleShortVersionString 2>/dev/null) installed"
+$running && open "$app"
+exit 0
