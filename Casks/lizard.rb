@@ -1,6 +1,6 @@
 cask "lizard" do
-  version "0.1.5"
-  sha256 "153e66f9ee2b0d252191999c0cdfb9fa207a69b77a0aaaffeca2c1329a6b65dc"
+  version "0.1.6"
+  sha256 "77ef442a324a170f5f6fea300d6e73be28cf423460e5f78b5af83b9b20ed7023"
 
   url "https://github.com/Get-Lizard/lizard/releases/download/v#{version}/Lizard-#{version}.dmg"
   name "Lizard"
